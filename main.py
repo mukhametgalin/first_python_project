@@ -105,7 +105,7 @@ Here you will not learn anything, but you will have a good rest. Hope you enjoy 
         self.hunger -= right // 1
         if self.hunger < 0:
             print("\033[31mYou have lost!\n\033[0m")
-            self.game_sleep()
+            time.sleep(2)
             self.end()
         return c
 
