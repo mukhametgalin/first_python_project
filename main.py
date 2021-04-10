@@ -111,8 +111,7 @@ Here you will not learn anything, but you will have a good rest. Hope you enjoy 
         left = time.time()
         print("\033[46mChoose your option: "
                             "{right} - go that way, {up} - go up, "
-                            "{down} - go down, {left} - exit\033[0m"
-                            "\nThen press ENTER\n".format(right=RIGHT, up=UP, down=DOWN, left=LEFT))
+                            "{down} - go down, {left} - exit\033[0m".format(right=RIGHT, up=UP, down=DOWN, left=LEFT))
         c = getch.getch()
         print(c)
         right = time.time() - left
@@ -225,7 +224,7 @@ Here you will not learn anything, but you will have a good rest. Hope you enjoy 
                        "->Development course",
                        "->Hack course")
 
-    def do_cources(self, cource_name, cost, parameter):
+    def do_cources(self, cource_name, cost):
         clean_console()
         print("\033[46m{cource_name} course costs"
                 "\033[0m \033[32m{name}$\033[0m".format(cource_name=cource_name, name=self.development_course_cost))
@@ -248,17 +247,15 @@ Here you will not learn anything, but you will have a good rest. Hope you enjoy 
             print("\033[34mCongratulations! Now your skill is higher\n\033[0m")
             self.game_sleep()
             self.money -= cost
-            parameter += 10
-            self.work_menu.menu_list[1] = "+{name}$ {name_nrg} energy points: develop project".format(
-                name=self.mini_game_dev_salary, name_nrg=self.mini_game_dev_energy_change)
-            return True
+            return 10
         else:
-            return False
+            return 0
 
     development_course_cost = 100
 
     def development_course(self):
-        fl = self.do_cources("Development", self.development_course_cost, self.mini_game_dev_salary)
+        fl = self.do_cources("Development", self.development_course_cost)
+        self.mini_game_dev_salary += fl
         if fl:
             self.work_menu.menu_list[1] = "+{name}$ {name_nrg} energy points: develop project".format(
                 name=self.mini_game_dev_salary, name_nrg=self.mini_game_dev_energy_change)
@@ -266,7 +263,8 @@ Here you will not learn anything, but you will have a good rest. Hope you enjoy 
     hack_course_cost = 100
 
     def hack_course(self):
-        fl = self.do_cources("Hacking", self.hack_course_cost, self.mini_game_hack_salary)
+        fl = self.do_cources("Hacking", self.hack_course_cost)
+        self.mini_game_hack_salary += fl
         if fl:
             self.work_menu.menu_list[0] = "+{name}$, {name_nrg} energy points: hack code".format(
              name=self.mini_game_hack_salary, name_nrg=self.mini_game_hack_energy_change)
