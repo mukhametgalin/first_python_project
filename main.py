@@ -47,7 +47,7 @@ class Game:
         clean_console()
         print("Money: {name}".format(name=self.money))
         print("Energy: {name}/{max_en}".format(name=self.energy, max_en=self.max_energy))
-        print("Hunger: {name}/{max_h}".format(name=self.hunger, max_h=self.max_hunger))
+        print("Hunger: {name}/{max_h}".format(name=float('{:.2f}'.format(self.hunger)), max_h=self.max_hunger))
        # print("Exp: {name}".format(name=self.exp))
 
     def introduce(self):
@@ -102,7 +102,7 @@ Here you will not learn anything, but you will have a good rest. Hope you enjoy 
                             "down arrow - go down, left arrow - exit\033[0m"
                             "\nThen press ENTER\n")
         right = time.time() - left
-        self.hunger -= right // 1
+        self.hunger -= right
         if self.hunger < 0:
             print("\033[31mYou have lost!\n\033[0m")
             time.sleep(2)
@@ -122,7 +122,7 @@ Here you will not learn anything, but you will have a good rest. Hope you enjoy 
     def game_sleep(self, sleep_time=2):
         right = sleep_time
         time.sleep(sleep_time)
-        self.hunger -= right // 1
+        self.hunger -= right
         if self.hunger < 0:
             print("\033[31mYou have lost!\n\033[0m")
             time.sleep(2)
@@ -279,15 +279,16 @@ Here you will not learn anything, but you will have a good rest. Hope you enjoy 
         print("\033[34m{name} energy points restored!\033[0m".format(name=finish - start))
         self.game_sleep()
 
-
     club_cost = 30
 
-    def relax_go_to_the_club(self):
+    def relax_restoring(self, activity, cost, change, full_relax=False):
         clean_console()
-        print("\033[46mYou want to go to the club, it costs\033[0m \033[32m{name}$\033[0m".format(name=self.club_cost))
+        start = self.energy
+        print("\033[46mYou want to {activity}, it costs\033[0m "
+              "\033[32m{name}$\033[0m".format(activity=activity, name=cost))
         left = time.time()
-        c = getpass.getpass("\033[46mDo you want to go to the club \033[0m\033[43m(y/n)\033[0m\033[46m?\033[0m"
-                            " You will restore your energy\n")
+        c = getpass.getpass("\033[46mDo you want to {activity} \033[0m\033[43m(y/n)\033[0m\033[46m?\033[0m"
+                            " You will restore your energy\n".format(activity=activity))
         right = time.time() - left
         self.hunger -= right // 1
         if self.hunger < 0:
@@ -295,15 +296,24 @@ Here you will not learn anything, but you will have a good rest. Hope you enjoy 
             self.game_sleep()
             self.end()
         if c == "y":
-            if self.money < self.club_cost:
+            if self.money < cost:
                 clean_console()
-                print("\033[31mYou can't go to the club\n\033[0m")
+                print("\033[31mYou can't {activity}\n\033[0m".format(activity=activity))
                 self.game_sleep()
             else:
-                print("\033[34mCongratulations! Now your energy is 100%\n\033[0m")
-                self.game_sleep()
-                self.money -= self.club_cost
-                self.energy = self.max_energy
+                if full_relax:
+                    print("\033[34mCongratulations! Now your energy is 100%\n\033[0m")
+                    self.game_sleep()
+                    self.money -= cost
+                    self.energy = self.max_energy
+                else:
+                    self.change_energy(change)
+                    finish = self.energy
+                    print("\033[34m{name} energy points restored!\033[0m".format(name=finish - start))
+                    self.game_sleep()
+
+    def relax_go_to_the_club(self):
+        self.relax_restoring("go to the club", self.club_cost, 0, True)
 
     eat_menu = Menu("Choose your activity:", "\n",
                       "->Eat doshirak",
@@ -313,14 +323,14 @@ Here you will not learn anything, but you will have a good rest. Hope you enjoy 
     doshirak_cost = 2
     doshirak_change = 50
 
-    def eat_doshirak(self):
+    def hunger_restoring(self, activity, cost, change):
         clean_console()
         start = self.hunger
-        print("\033[46mYou want to eat doshirak, it costs"
-              "\033[0m \033[32m{name}$\033[0m".format(name=self.doshirak_cost))
+        print("\033[46mYou want to {some}, it costs"
+              "\033[0m \033[32m{name}$\033[0m".format(some=activity, name=cost))
         left = time.time()
-        c = getpass.getpass("\033[46mDo you want to eat doshirak \033[0m\033[43m(y/n)\033[0m\033[46m?\033[0m"
-                            " You will restore {name} points of hunger\n".format(name=self.doshirak_change))
+        c = getpass.getpass("\033[46mDo you want to {activity} \033[0m\033[43m(y/n)\033[0m\033[46m?\033[0m"
+                            " You will restore {name} points of hunger\n".format(activity=activity, name=change))
         right = time.time() - left
         self.hunger -= right // 1
         if self.hunger < 0:
@@ -328,60 +338,52 @@ Here you will not learn anything, but you will have a good rest. Hope you enjoy 
             self.game_sleep()
             self.end()
         if c == "y":
-            if self.money < self.doshirak_cost:
+            if self.money < cost:
                 clean_console()
-                print("\033[31mYou can't eat doshirak\n\033[0m")
+                print("\033[31mYou can't {activity}\n\033[0m".format(activity=activity))
                 self.game_sleep()
             else:
-                self.money -= self.doshirak_cost
-                self.change_hunger(self.doshirak_change)
+                self.money -= cost
+                self.change_hunger(change)
                 finish = self.hunger
-                print("\033[34m{name} hunger points restored!\033[0m".format(name=finish - start))
+                print("\033[34m{name} hunger points restored!"
+                      "\033[0m".format(name=float('{:.3f}'.format(finish - start))))
                 self.game_sleep()
+
+    def eat_doshirak(self):
+        self.hunger_restoring("eat doshirak", self.doshirak_cost, self.doshirak_change)
 
     cafe_cost = 10
     cafe_change = 200
 
     def cafe(self):
-        clean_console()
-        start = self.hunger
-        print("\033[46mYou want to go to the cafe, it costs"
-              "\033[0m \033[32m{name}$\033[0m".format(name=self.cafe_cost))
-        c = getpass.getpass("\033[46mDo you want to go to the cafe \033[0m\033[43m(y/n)\033[0m\033[46m?\033[0m"
-                            " You will restore {name} points of hunger\n".format(name=self.cafe_cost))
-        if c == "y":
-            if self.money < self.cafe_cost:
-                clean_console()
-                print("\033[31mYou can't go to the cafe\n\033[0m")
-                self.game_sleep()
-            else:
-                self.money -= self.cafe_cost
-                self.change_hunger(self.cafe_change)
-                finish = self.hunger
-                print("\033[34m{name} hunger points restored!\033[0m".format(name=finish - start))
-                self.game_sleep()
+        self.hunger_restoring("go to the cafe", self.cafe_cost, self.cafe_change)
 
     restaurant_cost = 30
     restaurant_change = 1000
 
     def restaurant(self):
+        self.hunger_restoring("go to the restaurant", self.restaurant_cost, self.restaurant_change)
+
+    def run_some_option(self, cur_menu, *args):
         clean_console()
-        start = self.hunger
-        print("\033[46mYou want to go to the restaurant, it costs"
-              "\033[0m \033[32m{name}$\033[0m".format(name=self.restaurant_cost))
-        c = getpass.getpass("\033[46mDo you want to go to the restaurant \033[0m\033[43m(y/n)\033[0m\033[46m?\033[0m"
-                            " You will restore {name} points of hunger\n".format(name=self.restaurant_cost))
-        if c == "y":
-            if self.money < self.restaurant_cost:
-                clean_console()
-                print("\033[31mYou can't go to the restaurant\n\033[0m")
-                self.game_sleep()
-            else:
-                self.money -= self.restaurant_cost
-                self.change_hunger(self.restaurant_change)
-                finish = self.hunger
-                print("\033[34m{name} hunger points restored!\033[0m".format(name=finish - start))
-                self.game_sleep()
+        cur_menu.print_menu()
+        c = self.get_symbol()
+        if c == DOWN:
+            cur_menu.down_mark()
+        elif c == UP:
+            cur_menu.up_mark()
+        elif c == RIGHT:
+            pointer = 0
+            for i in args:
+                if cur_menu.marker == pointer:
+                    i()
+                    break
+                pointer += 1
+
+        elif c == LEFT:
+            return False
+        return True
 
     def run(self):
         self.introduce()
@@ -396,79 +398,23 @@ Here you will not learn anything, but you will have a good rest. Hope you enjoy 
             elif c == RIGHT:
                 if self.main_menu.marker == 0:
                     while True:
-                        clean_console()
-                        self.work_menu.print_menu()
-                        c = self.get_symbol()
-
-                        if c == DOWN:
-                            self.work_menu.down_mark()
-                        elif c == UP:
-                            self.work_menu.up_mark()
-                        elif c == RIGHT:
-                            if self.work_menu.marker == 0:
-                                self.mini_game_hack()
-                            else:
-                                self.mini_game_development()
-                        elif c == LEFT:
+                        fl = self.run_some_option(self.work_menu, self.mini_game_hack, self.mini_game_development)
+                        if not fl:
                             break
                 elif self.main_menu.marker == 1:
                     while True:
-                        clean_console()
-                        self.course_menu.print_menu()
-
-                        c = self.get_symbol()
-
-                        if c == DOWN:
-                            self.course_menu.down_mark()
-                        elif c == UP:
-                            self.course_menu.up_mark()
-                        elif c == RIGHT:
-                            if self.course_menu.marker == 0:
-                                self.development_course()
-                            if self.course_menu.marker == 1:
-                                self.hack_course()
-                            else:
-                                pass
-                        elif c == LEFT:
+                        fl = self.run_some_option(self.course_menu, self.development_course, self.hack_course)
+                        if not fl:
                             break
                 elif self.main_menu.marker == 2:
                     while True:
-                        clean_console()
-                        self.relax_menu.print_menu()
-
-                        c = self.get_symbol()
-
-                        if c == DOWN:
-                            self.relax_menu.down_mark()
-                        elif c == UP:
-                            self.relax_menu.up_mark()
-                        elif c == RIGHT:
-                            if self.relax_menu.marker == 0:
-                                self.relax_sleep()
-                            if self.relax_menu.marker == 1:
-                                self.relax_go_to_the_club()
-                                pass
-                        elif c == LEFT:
+                        fl = self.run_some_option(self.relax_menu, self.relax_sleep, self.relax_go_to_the_club)
+                        if not fl:
                             break
                 elif self.main_menu.marker == 3:
                     while True:
-                        clean_console()
-                        self.eat_menu.print_menu()
-
-                        c = self.get_symbol()
-
-                        if c == DOWN:
-                            self.eat_menu.down_mark()
-                        elif c == UP:
-                            self.eat_menu.up_mark()
-                        elif c == RIGHT:
-                            if self.eat_menu.marker == 0:
-                                self.eat_doshirak()
-                            if self.eat_menu.marker == 1:
-                                self.cafe()
-                            if self.eat_menu.marker == 2:
-                                self.restaurant()
-                        elif c == LEFT:
+                        fl = self.run_some_option(self.eat_menu, self.eat_doshirak, self.cafe, self.restaurant)
+                        if not fl:
                             break
             elif c == LEFT:
                 break
