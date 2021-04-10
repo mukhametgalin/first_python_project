@@ -2,10 +2,12 @@ import time
 import os
 import getpass
 import random
-UP = '\x1b[A'
-DOWN = '\x1b[B'
-RIGHT = '\x1b[C'
-LEFT = '\x1b[D'
+import getch
+
+UP = 'w'
+DOWN = 's'
+RIGHT = 'd'
+LEFT = 'a'
 
 
 def clean_console():
@@ -29,11 +31,19 @@ def generate_text():
     for i in range(default_size):
         result = result + chars[random.randrange(0, len(chars))]
 
+    while result[-1] == ' ':
+        result.pop()
+
+    while result[0] == ' ':
+        result.pop(0)
+
     return result
 
 
 class Game:
     """Game"""
+
+#   CONSTANTS
 
     sleep_time = 2
     money = 100
@@ -41,14 +51,12 @@ class Game:
     max_energy = 100
     hunger = 101
     max_hunger = 500
-   # exp = 10
 
     def print_status(self):
         clean_console()
         print("Money: {name}".format(name=self.money))
         print("Energy: {name}/{max_en}".format(name=self.energy, max_en=self.max_energy))
         print("Hunger: {name}/{max_h}".format(name=float('{:.2f}'.format(self.hunger)), max_h=self.max_hunger))
-       # print("Exp: {name}".format(name=self.exp))
 
     def introduce(self):
         clean_console()
@@ -65,6 +73,10 @@ Here you will not learn anything, but you will have a good rest. Hope you enjoy 
         print("\033[1;36mBye bye\033[0m")
         time.sleep(self.sleep_time)
         exit(0)
+
+
+#   MENU_CLASS__________________________________________________________________________________________________________
+
 
     class Menu:
         """Menu"""
@@ -97,10 +109,12 @@ Here you will not learn anything, but you will have a good rest. Hope you enjoy 
 
     def get_symbol(self):
         left = time.time()
-        c = getpass.getpass("\033[46mChoose your option: "
-                            "right arrow - go that way, up arrow - go up, "
-                            "down arrow - go down, left arrow - exit\033[0m"
-                            "\nThen press ENTER\n")
+        print("\033[46mChoose your option: "
+                            "{right} - go that way, {up} - go up, "
+                            "{down} - go down, {left} - exit\033[0m"
+                            "\nThen press ENTER\n".format(right=RIGHT, up=UP, down=DOWN, left=LEFT))
+        c = getch.getch()
+        print(c)
         right = time.time() - left
         self.hunger -= right
         if self.hunger < 0:
@@ -127,6 +141,10 @@ Here you will not learn anything, but you will have a good rest. Hope you enjoy 
             print("\033[31mYou have lost!\n\033[0m")
             time.sleep(2)
             self.end()
+
+
+#   MINI_GAMES__________________________________________________________________________________________________________
+
 
     mini_game_hack_salary = 11
     mini_game_hack_energy_change = -20
@@ -178,7 +196,7 @@ Here you will not learn anything, but you will have a good rest. Hope you enjoy 
             return
         print("\033[46mDevelop a project and try to sell it:\033[0m")
         left = time.time()
-        prj = getpass.getpass("\033[46mEnter a sequence of characters: "
+        prj = input("\033[46mEnter a sequence of characters: "
                               "the longer it is, the more chances you have to sell the project.\n\033[0m")
         right = time.time() - left
         self.hunger -= right // 1
@@ -190,7 +208,7 @@ Here you will not learn anything, but you will have a good rest. Hope you enjoy 
         clean_console()
         len_prj = min(len(prj), 100)
         x = random.randrange(1, 101, 1)
-        if (x <= len_prj):
+        if x <= len_prj:
             print("\x1b[34mCongratulations! you sold the project! Your earnings: +{name}$ \x1b[0m".format(
                 name=self.mini_game_dev_salary))
             self.money += self.mini_game_dev_salary
@@ -199,18 +217,22 @@ Here you will not learn anything, but you will have a good rest. Hope you enjoy 
         self.game_sleep()
         self.change_energy(self.mini_game_dev_energy_change)
 
+
+#   COURCES_____________________________________________________________________________________________________________
+
+
     course_menu = Menu("Choose your activity:", "\n",
                        "->Development course",
                        "->Hack course")
 
-    development_course_cost = 100
-    
-    def development_course(self):
+    def do_cources(self, cource_name, cost, parameter):
         clean_console()
-        print("\033[46mDevelopment course costs\033[0m \033[32m{name}$\033[0m".format(name=self.development_course_cost))
+        print("\033[46m{cource_name} course costs"
+                "\033[0m \033[32m{name}$\033[0m".format(cource_name=cource_name, name=self.development_course_cost))
         left = time.time()
-        c = getpass.getpass("\033[46mDo you want to buy it \033[0m\033[43m(y/n)\033[0m\033[46m?\033[0m "
-                            "You will upgrade your skills.\n")
+        print("\033[46mDo you want to buy it \033[0m\033[43m(y/n)\033[0m\033[46m?\033[0m "
+              "You will upgrade your skills.\n")
+        c = getch.getch()
         right = time.time() - left
         self.hunger -= right // 1
         if self.hunger < 0:
@@ -218,48 +240,39 @@ Here you will not learn anything, but you will have a good rest. Hope you enjoy 
             self.game_sleep()
             self.end()
         if c == "y":
-            if self.money < self.development_course_cost:
+            if self.money < cost:
                 clean_console()
                 print("\033[31mYou can't have it\n\033[0m")
                 self.game_sleep()
                 return
             print("\033[34mCongratulations! Now your skill is higher\n\033[0m")
             self.game_sleep()
-            self.money -= self.development_course_cost
-            self.mini_game_dev_salary += 10
+            self.money -= cost
+            parameter += 10
             self.work_menu.menu_list[1] = "+{name}$ {name_nrg} energy points: develop project".format(
-                         name=self.mini_game_dev_salary, name_nrg=self.mini_game_dev_energy_change)
+                name=self.mini_game_dev_salary, name_nrg=self.mini_game_dev_energy_change)
+            return True
         else:
-            return
-        
+            return False
+
+    development_course_cost = 100
+
+    def development_course(self):
+        fl = self.do_cources("Development", self.development_course_cost, self.mini_game_dev_salary)
+        if fl:
+            self.work_menu.menu_list[1] = "+{name}$ {name_nrg} energy points: develop project".format(
+                name=self.mini_game_dev_salary, name_nrg=self.mini_game_dev_energy_change)
+
     hack_course_cost = 100
 
     def hack_course(self):
-        clean_console()
-        print("\033[46mHack course costs\033[0m \033[32m{name}$\033[0m".format(name=self.hack_course_cost))
-        left = time.time()
-        c = getpass.getpass("\033[46mDo you want to buy it \033[0m\033[43m(y/n)\033[0m\033[46m?\033[0m"
-                            " You will upgrade your skills.\n")
-        right = time.time() - left
-        self.hunger -= right // 1
-        if self.hunger < 0:
-            print("\033[31mYou have lost!\n\033[0m")
-            self.game_sleep()
-            self.end()
-        if c == "y":
-            if self.money < self.hack_course_cost:
-                clean_console()
-                print("\033[31mYou can't have it\n\033[0m")
-                self.game_sleep()
-                return
-            print("\033[34mCongratulations! Now your skill is higher\n\033[0m")
-            self.game_sleep()
-            self.money -= self.hack_course_cost
-            self.mini_game_hack_salary += 10
-            self.work_menu.menu_list[0] = "+{name}$, {name_nrg} energy points: взломать код".format(
-                         name=self.mini_game_hack_salary, name_nrg=self.mini_game_hack_energy_change)
-        else:
-            return
+        fl = self.do_cources("Hacking", self.hack_course_cost, self.mini_game_hack_salary)
+        if fl:
+            self.work_menu.menu_list[0] = "+{name}$, {name_nrg} energy points: hack code".format(
+             name=self.mini_game_hack_salary, name_nrg=self.mini_game_hack_energy_change)
+
+
+#   RELAX_______________________________________________________________________________________________________________
 
     relax_menu = Menu("Choose your activity:", "\n",
                       "->Sleep",
@@ -287,8 +300,9 @@ Here you will not learn anything, but you will have a good rest. Hope you enjoy 
         print("\033[46mYou want to {activity}, it costs\033[0m "
               "\033[32m{name}$\033[0m".format(activity=activity, name=cost))
         left = time.time()
-        c = getpass.getpass("\033[46mDo you want to {activity} \033[0m\033[43m(y/n)\033[0m\033[46m?\033[0m"
+        print("\033[46mDo you want to {activity} \033[0m\033[43m(y/n)\033[0m\033[46m?\033[0m"
                             " You will restore your energy\n".format(activity=activity))
+        c = getch.getch()
         right = time.time() - left
         self.hunger -= right // 1
         if self.hunger < 0:
@@ -315,6 +329,9 @@ Here you will not learn anything, but you will have a good rest. Hope you enjoy 
     def relax_go_to_the_club(self):
         self.relax_restoring("go to the club", self.club_cost, 0, True)
 
+
+#   EAT_________________________________________________________________________________________________________________
+
     eat_menu = Menu("Choose your activity:", "\n",
                       "->Eat doshirak",
                       "->Go to the cafe",
@@ -329,8 +346,9 @@ Here you will not learn anything, but you will have a good rest. Hope you enjoy 
         print("\033[46mYou want to {some}, it costs"
               "\033[0m \033[32m{name}$\033[0m".format(some=activity, name=cost))
         left = time.time()
-        c = getpass.getpass("\033[46mDo you want to {activity} \033[0m\033[43m(y/n)\033[0m\033[46m?\033[0m"
+        print("\033[46mDo you want to {activity} \033[0m\033[43m(y/n)\033[0m\033[46m?\033[0m"
                             " You will restore {name} points of hunger\n".format(activity=activity, name=change))
+        c = getch.getch()
         right = time.time() - left
         self.hunger -= right // 1
         if self.hunger < 0:
@@ -365,6 +383,9 @@ Here you will not learn anything, but you will have a good rest. Hope you enjoy 
     def restaurant(self):
         self.hunger_restoring("go to the restaurant", self.restaurant_cost, self.restaurant_change)
 
+
+#   RUN_________________________________________________________________________________________________________________
+
     def run_some_option(self, cur_menu, *args):
         clean_console()
         cur_menu.print_menu()
@@ -387,7 +408,7 @@ Here you will not learn anything, but you will have a good rest. Hope you enjoy 
 
     def run(self):
         self.introduce()
-        while True:
+        while True: #event loop
             self.print_status()
             self.main_menu.print_menu()
             c = self.get_symbol()
