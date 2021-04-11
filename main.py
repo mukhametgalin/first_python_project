@@ -1,43 +1,13 @@
 import time
-import os
-import getpass
-import random
 import getch
+import mini_games
+from helping_module import clean_console
+
 
 UP = 'w'
 DOWN = 's'
 RIGHT = 'd'
 LEFT = 'a'
-
-
-def clean_console():
-    os.system('clear')
-
-
-def generate_text():
-    chars = []
-    for i in range(ord('a'), ord('z') + 1):
-        chars.append(chr(i))
-    for i in range(ord('A'), ord('A') + 1):
-        chars.append(chr(i))
-    for i in range(ord('0'), ord('9') + 1):
-        chars.append(chr(i))
-    chars.append(' ')
-
-    default_size = 20
-
-    result = ""
-
-    for i in range(default_size):
-        result = result + chars[random.randrange(0, len(chars))]
-
-    while result[-1] == ' ':
-        result.pop()
-
-    while result[0] == ' ':
-        result.pop(0)
-
-    return result
 
 
 class Game:
@@ -144,12 +114,6 @@ Here you will not learn anything, but you will have a good rest. Hope you enjoy 
 
 #   MINI_GAMES__________________________________________________________________________________________________________
 
-
-    mini_game_hack_salary = 11
-    mini_game_hack_energy_change = -20
-    mini_game_dev_salary = 5
-    mini_game_dev_energy_change = -10
-
     main_menu = Menu("Choose your activity:", "\n",
                      "->Work",
                      "->Course",
@@ -158,63 +122,11 @@ Here you will not learn anything, but you will have a good rest. Hope you enjoy 
 
     work_menu = Menu("Choose your activity:", "\n",
                      "+{name}$, {name_nrg} energy points: hack code".format(
-                         name=mini_game_hack_salary, name_nrg=mini_game_hack_energy_change),
+                         name=mini_games.mini_game_hack_salary, name_nrg=mini_games.mini_game_hack_energy_change),
                      "+{name}$ {name_nrg} energy points: develop project".format(
-                         name=mini_game_dev_salary, name_nrg=mini_game_dev_energy_change))
+                         name=mini_games.mini_game_dev_salary, name_nrg=mini_games.mini_game_dev_energy_change))
 
-    def mini_game_hack(self):
-        clean_console()
-        if self.energy + self.mini_game_hack_energy_change < 0:
-            print('\x1b[31m' + "You can't do it." + '\x1b[0m')
-            self.game_sleep()
-            return
-        text = generate_text()
-        print(text)
-        print("\033[46mHere is a sequence of characters that will help you hack someone else's system.\033[0m")
-        left = time.time()
-        x = getpass.getpass("\033[46mTo hack the system, repeat the sequence:\033[0m ")
-        right = time.time() - left
-        self.hunger -= right // 1
-        if self.hunger < 0:
-            print("\033[31mYou have lost!\n\033[0m")
-            self.game_sleep()
-            self.end()
-        if x == text:
-            print("\033[34mVictory! You have received {name}$! \033[0m".format(name=self.mini_game_hack_salary))
-            self.money += self.mini_game_hack_salary
-        else:
-            print("\033[31mYou have lost!\033[0m")
-        self.change_energy(self.mini_game_hack_energy_change)
-        self.game_sleep()
 
-    def mini_game_development(self):
-        clean_console()
-        if self.energy + self.mini_game_dev_energy_change < 0:
-            print('\x1b[36m' + "You can't do it" + '\x1b[0m')
-            self.game_sleep()
-            return
-        print("\033[46mDevelop a project and try to sell it:\033[0m")
-        left = time.time()
-        prj = input("\033[46mEnter a sequence of characters: "
-                              "the longer it is, the more chances you have to sell the project.\n\033[0m")
-        right = time.time() - left
-        self.hunger -= right // 1
-        if self.hunger < 0:
-            print("\033[31mYou have lost!\n\033[0m")
-            self.game_sleep()
-            self.end()
-
-        clean_console()
-        len_prj = min(len(prj), 100)
-        x = random.randrange(1, 101, 1)
-        if x <= len_prj:
-            print("\x1b[34mCongratulations! you sold the project! Your earnings: +{name}$ \x1b[0m".format(
-                name=self.mini_game_dev_salary))
-            self.money += self.mini_game_dev_salary
-        else:
-            print("\033[31mNobody needs your project!\033[0m")
-        self.game_sleep()
-        self.change_energy(self.mini_game_dev_energy_change)
 
 
 #   COURCES_____________________________________________________________________________________________________________
@@ -255,19 +167,19 @@ Here you will not learn anything, but you will have a good rest. Hope you enjoy 
 
     def development_course(self):
         fl = self.do_cources("Development", self.development_course_cost)
-        self.mini_game_dev_salary += fl
+        mini_games.mini_game_dev_salary += fl
         if fl:
             self.work_menu.menu_list[1] = "+{name}$ {name_nrg} energy points: develop project".format(
-                name=self.mini_game_dev_salary, name_nrg=self.mini_game_dev_energy_change)
+                name=mini_games.mini_game_dev_salary, name_nrg=mini_games.mini_game_dev_energy_change)
 
     hack_course_cost = 100
 
     def hack_course(self):
         fl = self.do_cources("Hacking", self.hack_course_cost)
-        self.mini_game_hack_salary += fl
+        mini_games.mini_game_hack_salary += fl
         if fl:
             self.work_menu.menu_list[0] = "+{name}$, {name_nrg} energy points: hack code".format(
-             name=self.mini_game_hack_salary, name_nrg=self.mini_game_hack_energy_change)
+             name=mini_games.mini_game_hack_salary, name_nrg=mini_games.mini_game_hack_energy_change)
 
 
 #   RELAX_______________________________________________________________________________________________________________
@@ -396,7 +308,10 @@ Here you will not learn anything, but you will have a good rest. Hope you enjoy 
             pointer = 0
             for i in args:
                 if cur_menu.marker == pointer:
-                    i()
+                    if cur_menu == self.work_menu:
+                        i(self)
+                    else:
+                        i()
                     break
                 pointer += 1
 
@@ -417,7 +332,9 @@ Here you will not learn anything, but you will have a good rest. Hope you enjoy 
             elif c == RIGHT:
                 if self.main_menu.marker == 0:
                     while True:
-                        fl = self.run_some_option(self.work_menu, self.mini_game_hack, self.mini_game_development)
+                        fl = self.run_some_option(self.work_menu,
+                                                  mini_games.mini_game_hack,
+                                                  mini_games.mini_game_development)
                         if not fl:
                             break
                 elif self.main_menu.marker == 1:
